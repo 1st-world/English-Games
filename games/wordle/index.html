@@ -24,7 +24,7 @@
 
     <div class="toast-msg"></div>
 
-    <div id="game-container">
+    <main id="game-container">
         <div id="word-grid" tabindex="0"></div>
         <div id="definition"></div>
         <div class="keyboard" id="keyboard">
@@ -64,7 +64,16 @@
             </div>
         </div>
         <button class="key special" id="new-game-btn" onclick="initializeGame()">새 게임</button>
-    </div>
+    </main>
+
+    <footer class="app-footer">
+        <div class="footer-content">
+            <p>&copy; 2024-2026 1st-world. <a href="https://github.com/1st-world/English-Game/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" title="라이선스 전문">Licensed under MIT</a>.</p>
+            <div class="social-links">
+                <a href="https://github.com/1st-world/English-Game" target="_blank" rel="noopener noreferrer" title="GitHub"><i class="fa-brands fa-github"></i></a>
+            </div>
+        </div>
+    </footer>
 
     <div class="dialog-overlay" id="how2play-dialog">
         <div class="dialog-content">

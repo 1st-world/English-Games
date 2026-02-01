@@ -20,6 +20,7 @@
 }
 
 #game-container {
+  padding: 1rem 0.5rem;
   display: flex;
   flex: 1;
   flex-direction: column;
