@@ -34,8 +34,12 @@ const DialogManager = {
         dialog.classList.add('open');
 
         setTimeout(() => {
+            const title = dialog.querySelector('h2[tabindex="-1"]');
             const focusableElements = this.getFocusableElements(dialog);
-            if (focusableElements.length > 0) {
+            if (title) {
+                title.focus();
+            }
+            else if (focusableElements.length > 0) {
                 focusableElements[0].focus();
             } else {
                 dialog.setAttribute('tabindex', '-1');
