@@ -1,4 +1,4 @@
-const DialogManager = {
+export const DialogManager = {
     prevFocusedElement: null,
 
     init: function() {
@@ -110,7 +110,7 @@ const DialogManager = {
 };
 
 
-const SettingsManager = {
+export const SettingsManager = {
     prevTheme: null,
     systemMediaQueryDark: window.matchMedia('(prefers-color-scheme: dark)'),
 
@@ -219,7 +219,7 @@ const SettingsManager = {
  * @param {string} message - Message text to display
  * @param {number|null} duration - Duration the message is shown (in milliseconds, default is null)
  */
-function showToast(message, duration = null) {
+export function showToast(message, duration = null) {
     let toast = document.querySelector('.toast-msg');
     if (!toast) {
         toast = document.createElement('div');
