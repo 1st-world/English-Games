@@ -8,7 +8,8 @@ let currentGuess = '';
 let guesses = [];
 let isGameEnd = true;
 let validWordsSet = new Set();
-let validWordsArray = [];
+let wordFrequencies = {};
+let currentDifficulty = 'normal';
 
 const STATE_CORRECT = 'state-correct';
 const STATE_PRESENT = 'state-present';
@@ -75,15 +76,18 @@ UI.modalNewGameBtn.addEventListener('click', () => {
 
 async function loadLocalWords() {
     try {
-        const response = await fetch('words_alpha_sorted.txt');
-        if (!response.ok) {
-            throw new Error('Local words list load failed.');
-        }
-        const text = await response.text();
-        const words = text.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length === WORD_LENGTH && /^[A-Z]+$/.test(w));
-        validWordsArray = words;
-        validWordsSet = new Set(words);
-        console.log(`Local words list loaded: ${validWordsSet.size} words.`);
+        const [validResponse, answerResponse] = await Promise.all([
+            fetch('words_alpha_sorted.txt'),
+            fetch('word_frequencies.json')
+        ]);
+        if (!validResponse.ok) throw new Error('Local valid words list load failed.');
+        if (!answerResponse.ok) throw new Error('Local answer words list load failed.');
+
+        const validText = await validResponse.text();
+        const validWords = validText.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => /^[A-Z]+$/.test(w));
+        validWordsSet = new Set(validWords);
+        wordFrequencies = await answerResponse.json();
+        console.log(`Local words list loaded: ${validWordsSet.size} total valid words.`);
         return true;
     } catch (error) {
         console.error(`System Error in loadLocalWords(): ${error}`);
@@ -91,28 +95,28 @@ async function loadLocalWords() {
     }
 }
 
-async function getRandomWord() {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        const response = await fetch(`https://random-word-api.vercel.app/api?words=1&length=${WORD_LENGTH}`, {
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-            throw new Error(`API Server Error: ${response.status}`);
+function getRandomWord() {
+    const currentPool = wordFrequencies[WORD_LENGTH] || {};
+    let targetPool = [];
+    const difficultyCheck = {
+        easy: (freq) => freq >= 4.0,
+        normal: (freq) => freq >= 3.0 && freq < 5.0,
+        hard: (freq) => freq < 3.0
+    };
+    for (const [word, freq] of Object.entries(currentPool)) {
+        if (difficultyCheck[currentDifficulty](freq)) {
+            targetPool.push(word);
         }
-        const data = await response.json();
-        return data[0].toUpperCase();
-    } catch (error) {
-        if (validWordsArray.length > 0) {
-            console.warn('Random Word API call failed. Using local words list.');
-            const randomIndex = Math.floor(Math.random() * validWordsArray.length);
-            return validWordsArray[randomIndex];
-        }
-        console.error(`System Error in getRandomWord(): ${error}`);
-        return 'ERROR';
     }
+    if (targetPool.length === 0) {
+        targetPool = Object.keys(currentPool);
+        if (targetPool.length === 0) {
+            throw new Error(`No words available for ${WORD_LENGTH}-letter mode.`);
+        }
+        console.warn(`No word correspond to [Difficulty: ${currentDifficulty}], so a random word is selected from all words.`);
+    }
+    const randomIndex = Math.floor(Math.random() * targetPool.length);
+    return targetPool[randomIndex].toUpperCase();
 }
 
 async function getDefinition(word) {
@@ -150,11 +154,12 @@ async function initializeGame() {
     UI.newGameBtn.onclick = initializeGame;
     showToast('로드 중…');
 
-    if (validWordsSet.size === 0) {
+    if (validWordsSet.size === 0 || Object.keys(wordFrequencies).length === 0) {
         const success = await loadLocalWords();
         if (!success) {
-            alert('Failed to load local words list. Please check your files or contact the administrator.');
+            alert('단어 데이터를 불러오는 데 실패했습니다. 관리자에게 문의 바랍니다.');
             showToast('오류가 발생했습니다.');
+            UI.newGameBtn.disabled = false;
             return;
         }
     }
@@ -167,7 +172,14 @@ async function initializeGame() {
         if (attempts > 1) {
             showToast(`로드 중… (${attempts})`);
         }
-        secretWord = (challengeWord && attempts === 1) ? challengeWord : await getRandomWord();
+        try {
+            secretWord = (challengeWord && attempts === 1) ? challengeWord : getRandomWord();
+        } catch (error) {
+            console.error(`System Error in getRandomWord(): ${error}`);
+            showToast('현재 글자 수 설정에 맞는 단어 데이터가 없습니다.');
+            UI.newGameBtn.disabled = false;
+            return;
+        }
         if (!validWordsSet.has(secretWord)) continue;
         try {
             const def = await getDefinition(secretWord.toLowerCase());

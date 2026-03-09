@@ -1,6 +1,6 @@
 # English Games
 
-이 프로젝트는 다양한 영어 관련 미니 게임을 제공하는 웹 서비스입니다. 메인 로비를 통해 게임을 선택할 수 있으며, 현재는 영단어 추측 게임 **Wordle**이 구현되어 있고 추후 더 많은 게임이 추가될 예정입니다. 개발 로드맵은 [Wiki Pages](https://github.com/1st-world/English-Games/wiki)의 문서를 참고해 주세요.
+이 프로젝트는 영어 관련 미니 게임을 제공하는 웹 서비스입니다. 메인 로비에서 게임을 선택할 수 있으며, 현재는 **Wordle**이 구현되어 있고 추후 더 많은 게임이 추가될 예정입니다. 개발 로드맵은 [Wiki Pages](https://github.com/1st-world/English-Games/wiki)의 문서를 참고해 주세요.
 
 ## Wordle 개요
 
@@ -19,19 +19,22 @@
 
 ### 데이터 소스 및 API
 
-안정적인 서비스 제공을 위해 이원화된 데이터 소스를 사용합니다.
+- **유효 단어 목록**: `words_alpha_sorted.txt`
+  - 사용자가 입력한 단어가 실제 유효한 단어인지 검증하는 데 사용합니다.
+  - 도전장(Challenge) 공유 링크로 전달된 단어의 유효성 검사에도 활용합니다.
 
-- **무작위 단어 선택**: [Random Word Generator API](https://random-word-api.vercel.app/)
-    - 게임 시작 시 정답 단어 선정
-    - API 호출 실패 시 로컬 데이터(`words_alpha_sorted.txt`)에서 무작위로 추출합니다.
+- **정답 후보 및 난이도 데이터**: `word_frequencies.json`
+  - 게임 시작 시 정답 단어를 이 로컬 데이터에서 선택합니다.
+  - 단어가 현실에서 사용되는 빈도 정보를 바탕으로 난이도를 구분합니다.
+  - 해당 글자 수 또는 난이도에 맞는 후보가 없을 경우, 가능한 전체 후보군에서 무작위로 선택합니다.
 
 - **단어 의미 검색**: [Free Dictionary API](https://dictionaryapi.dev/)
-    - 게임 종료 후 정답 단어의 뜻 제공
-    - 이 기능은 오프라인 환경에서 실행하는 등 API 호출 실패 시 지원하지 않습니다.
+  - 게임 종료 후 정답 단어의 뜻을 제공하기 위해 사용합니다.
+  - 네트워크 문제 및 API 응답 실패 등으로 이 기능이 동작하지 않아도 게임 자체는 진행 가능합니다.
 
-- **로컬 데이터**의 원본은 [dwyl / English-words](https://github.com/dwyl/english-words) 프로젝트에서 가져왔습니다.
-    - 입력 단어 유효성 검증 및 API Fallback 용도
-    - 단어별 사용 빈도 구분이 없는 관계로 무작위 추출 시 난이도 조절이 어렵습니다.
+- **로컬 단어 데이터 출처**
+  - `words_alpha_sorted.txt`는 [dwyl / English-words](https://github.com/dwyl/english-words) 저장소에서 가져온 내용을 토대로 합니다.
+  - `word_frequencies.json`은 `words_alpha_sorted.txt`의 내용을 바탕으로 `wordfreq`의 `zipf_frequency`를 활용해 제작했습니다.
 
 ## 실행 방법
 
