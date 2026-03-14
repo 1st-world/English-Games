@@ -146,7 +146,7 @@ export const SettingsManager = {
             radio.addEventListener('change', (event) => {
                 if (this.isHighContrast()) {
                     this.setHighContrast(false); 
-                    showToast('고대비 모드가 해제되었습니다.', 1500);
+                    showToast('고대비 모드가 해제되었습니다.', { duration: 2000 });
                 }
                 this.setTheme(event.target.value);
             });
@@ -217,9 +217,13 @@ export const SettingsManager = {
 
 /**
  * @param {string} message - Message text to display
- * @param {number|null} duration - Duration the message is shown (in milliseconds, default is null)
+ * @param {Object} [options] - Toast configuration options
+ * @param {number|null} [options.duration=null] - Duration the message is shown (in milliseconds, default is null)
+ * @param {boolean} [options.isError=false] - Whether the message type is an error (default is false)
  */
-export function showToast(message, duration = null) {
+export function showToast(message, options = {}) {
+    const { duration = null, isError = false } = options;
+
     let toast = document.querySelector('.toast-msg');
     if (!toast) {
         toast = document.createElement('div');
@@ -229,18 +233,25 @@ export function showToast(message, duration = null) {
 
     if (!message) {
         toast.classList.remove('show');
+        toast.classList.remove('error');
         return;
     }
 
-    toast.textContent = message;
+    if (isError) {
+        toast.classList.add('error');
+        toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
+    } else {
+        toast.classList.remove('error');
+        toast.textContent = message;
+    }
 
     if (toast.hideTimeout) {
         clearTimeout(toast.hideTimeout);
         toast.hideTimeout = null;
     }
 
+    toast.classList.remove('show');
     void toast.offsetWidth;  // Force a reflow by accessing an offset property
-
     toast.classList.add('show');
 
     if (duration && duration > 0) {

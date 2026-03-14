@@ -1,8 +1,7 @@
 @font-face {
   font-style: normal;
   font-weight: normal;
-  src:
-    url("../assets/fonts/NanumSquareNeo-bRg.ttf") format("truetype");
+  src: url("../assets/fonts/NanumSquareNeo-bRg.ttf") format("truetype");
   font-family: "NanumSquareNeo";
   font-display: swap;
 }
@@ -14,14 +13,18 @@
   --text-secondary: #5e6c78;
 
   --color-white: #ffffff;
+  --color-high-contrast: #ffffff;
   --color-accent: #6c5ce7;
   --color-external-link: #0000ff;
+  --color-error: #e74c3c;
 
   --border-color: #dce1e6;
   --overlay-bg: rgba(0, 0, 0, 0.5);
-  --shadow-soft:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
-  --shadow-dialog: 0 0 25px rgba(0, 0, 0, 0.5);
+
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-s: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-m: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+  --shadow-l: 0 20px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
 
   --max-width: 31.25rem;
 
@@ -36,12 +39,15 @@
   --text-secondary: #a6a6a6;
 
   --color-external-link: #87ceeb;
+  --color-error: #ff6b6b;
 
   --border-color: #3a3a3c;
   --overlay-bg: rgba(0, 0, 0, 0.7);
-  --shadow-soft:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
-  --shadow-dialog: 0 0 25px rgba(0, 0, 0, 0.9);
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-s: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-m: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --shadow-l: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 :root[data-high-contrast="true"] {
   --bg-primary: #000000;
@@ -49,14 +55,18 @@
   --text-primary: #ffffff;
   --text-secondary: #ffff00;
 
-  --color-white: #000000;
+  --color-high-contrast: #000000;
   --color-accent: #00ffff;
   --color-external-link: #00ffff;
+  --color-error: #ff0000;
 
   --border-color: #ffffff;
   --overlay-bg: rgba(0, 0, 0, 0.85);
-  --shadow-soft: none;
-  --shadow-dialog: 0 0 0 2px #ffffff;
+
+  --shadow-xs: none;
+  --shadow-s: none;
+  --shadow-m: 0 0 0 1px #ffffff;
+  --shadow-l: 0 0 0 2px #ffffff;
 }
 
 [tabindex="-1"]:focus {
@@ -217,7 +227,7 @@ button {
   border: 1px solid var(--border-color);
   border-radius: 1.5rem;
   background-color: var(--bg-surface);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-s);
   text-align: left;
   transition: 0.2s;
   user-select: none;
@@ -225,6 +235,7 @@ button {
 .game-card:hover {
   transform: scale(1.05);
   border-color: var(--color-accent);
+  box-shadow: var(--shadow-m);
 }
 .game-card.disabled {
   cursor: default;
@@ -232,6 +243,7 @@ button {
 .game-card.disabled:hover {
   transform: none;
   border-color: var(--border-color);
+  box-shadow: var(--shadow-s);
 }
 .card-icon {
   display: flex;
@@ -255,19 +267,23 @@ button {
 }
 
 .toast-msg {
+  display: flex;
   z-index: var(--z-index-toast-msg);
   position: fixed;
   top: 10%;
   right: 0;
   left: 0;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
   max-width: min(20rem, 100vw);
   margin: 0 auto;
   padding: 0.75rem 1.25rem;
+  gap: 0.5rem;
   transform: translateY(-20px);
   border-radius: 2rem;
   background-color: var(--text-primary);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-l);
   color: var(--bg-surface);
   font-weight: bold;
   font-size: 1rem;
@@ -276,7 +292,12 @@ button {
   pointer-events: none;
   transition:
     opacity 0.3s ease,
-    transform 0.3s cubic-bezier(0.18, 0.88, 0.32, 1.28);
+    transform 0.3s cubic-bezier(0.18, 0.88, 0.32, 1.28),
+    background-color 0.3s;
+}
+.toast-msg.error {
+  background-color: var(--color-error);
+  color: var(--color-white);
 }
 .toast-msg.show {
   transform: translateY(0);
@@ -310,7 +331,7 @@ button {
   padding: 2rem;
   border-radius: 1rem;
   background-color: var(--bg-surface);
-  box-shadow: var(--shadow-dialog);
+  box-shadow: var(--shadow-l);
   color: var(--text-primary);
 }
 .dialog-content h2 {
@@ -421,8 +442,12 @@ button {
   opacity: 0;
 }
 .segmented-control label {
+  display: flex;
   flex: 1;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem;
+  gap: 0.25rem;
   border-radius: 0.25rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -431,12 +456,9 @@ button {
   transition: 0.2s ease;
   user-select: none;
 }
-.segmented-control label i {
-  margin-right: 0.25rem;
-}
 .segmented-control input[type="radio"]:checked + label {
   background-color: var(--bg-surface);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-xs);
   color: var(--text-primary);
   font-weight: bold;
 }
@@ -449,6 +471,9 @@ button {
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
+}
+.toggle-label-wrapper .helper-text {
+  text-align: right;
 }
 .toggle-switch {
   display: inline-block;
@@ -483,7 +508,7 @@ button {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 50%;
-  background-color: var(--color-white);
+  background-color: var(--color-high-contrast);
   content: "";
   transition: 0.4s;
 }

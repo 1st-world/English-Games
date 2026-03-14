@@ -65,17 +65,17 @@
 .state-correct {
   border-color: var(--color-correct) !important;
   background-color: var(--color-correct) !important;
-  color: var(--color-white) !important;
+  color: var(--color-high-contrast) !important;
 }
 .state-present {
   border-color: var(--color-present) !important;
   background-color: var(--color-present) !important;
-  color: var(--color-white) !important;
+  color: var(--color-high-contrast) !important;
 }
 .state-absent {
   border-color: var(--color-absent) !important;
   background-color: var(--color-absent) !important;
-  color: var(--color-white) !important;
+  color: var(--color-high-contrast) !important;
 }
 
 .keyboard {
@@ -126,10 +126,11 @@
   width: 100%;
   max-width: none;
   padding: 0.75rem;
+  gap: 0.5rem;
   font-size: 1rem;
 }
-.key.special.full i {
-  margin-right: 0.5rem;
+.key.special.full:hover {
+  background-color: color-mix(in srgb, var(--color-special), transparent 50%);
 }
 
 .answer-box {
@@ -138,6 +139,9 @@
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   background-color: var(--bg-surface);
+}
+#result-msg {
+  line-height: 150%;
 }
 #result-word {
   display: block;

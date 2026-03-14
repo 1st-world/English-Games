@@ -56,16 +56,16 @@ UI.shareChallengeBtn.addEventListener('click', async () => {
         }
     }
     if (!navigator.clipboard) {
-        showToast('현재 환경에서는 클립보드에 접근할 수 없습니다.', 2000);
+        showToast('현재 환경에서는 클립보드에 접근할 수 없습니다.', { duration: 2000, isError: true });
         return;
     }
     try {
         const link = generateChallengeLink();
         await navigator.clipboard.writeText(link);
-        showToast('링크를 클립보드에 복사했습니다!', 2000);
+        showToast('링크가 클립보드에 복사되었습니다.', { duration: 2000 });
     } catch (error) {
         console.error(`System Error in shareChallengeBtn.addEventListener: ${error}`);
-        showToast('링크 복사에 실패했습니다.', 2000);
+        showToast('링크 복사에 실패했습니다.', { duration: 2000, isError: true });
     }
 });
 
@@ -98,6 +98,7 @@ async function loadLocalWords() {
 function getRandomWord() {
     const currentPool = wordFrequencies[WORD_LENGTH] || {};
     let targetPool = [];
+    let isExpanded = false;
     const difficultyCheck = {
         easy: (freq) => freq >= 4.0,
         normal: (freq) => freq >= 3.0 && freq < 5.0,
@@ -110,13 +111,17 @@ function getRandomWord() {
     }
     if (targetPool.length === 0) {
         targetPool = Object.keys(currentPool);
+        isExpanded = true;
         if (targetPool.length === 0) {
             throw new Error(`No words available for ${WORD_LENGTH}-letter mode.`);
         }
         console.warn(`No word correspond to [Difficulty: ${currentDifficulty}], so a random word is selected from all words.`);
     }
     const randomIndex = Math.floor(Math.random() * targetPool.length);
-    return targetPool[randomIndex].toUpperCase();
+    return {
+        word: targetPool[randomIndex].toUpperCase(),
+        isExpanded: isExpanded
+    };
 }
 
 async function getDefinition(word) {
@@ -157,8 +162,7 @@ async function initializeGame() {
     if (validWordsSet.size === 0 || Object.keys(wordFrequencies).length === 0) {
         const success = await loadLocalWords();
         if (!success) {
-            alert('단어 데이터를 불러오는 데 실패했습니다. 관리자에게 문의 바랍니다.');
-            showToast('오류가 발생했습니다.');
+            showToast('데이터를 불러오지 못했습니다.', { isError: true });
             UI.newGameBtn.disabled = false;
             return;
         }
@@ -167,16 +171,23 @@ async function initializeGame() {
     const challengeInfo = getChallengeWord();
     let challengeWord = challengeInfo.word;
     let attempts = 0;
+    let isPoolExpanded = false;
     while (true) {
         attempts++;
         if (attempts > 1) {
             showToast(`로드 중… (${attempts})`);
         }
         try {
-            secretWord = (challengeWord && attempts === 1) ? challengeWord : getRandomWord();
+            if (challengeWord && attempts === 1) {
+                secretWord = challengeWord;
+            } else {
+                const result = getRandomWord();
+                secretWord = result.word;
+                isPoolExpanded = result.isExpanded;
+            }
         } catch (error) {
             console.error(`System Error in getRandomWord(): ${error}`);
-            showToast('현재 글자 수 설정에 맞는 단어 데이터가 없습니다.');
+            showToast('현재 글자 수에 맞는 데이터가 없습니다.', { isError: true });
             UI.newGameBtn.disabled = false;
             return;
         }
@@ -189,7 +200,7 @@ async function initializeGame() {
             }
         } catch (error) {
             console.warn(`Dictionary API call failed: ${error}. Starting without definition.`);
-            secretWordDefinition = "⚠️ The definition could not be loaded due to connection issues.";
+            secretWordDefinition = "⚠️ The definition could not be loaded due to API connection issues. Click here to search directly in the dictionary.";
             break;
         }
     }
@@ -199,9 +210,12 @@ async function initializeGame() {
     document.querySelectorAll('.key').forEach(key => {
         key.classList.remove(STATE_CORRECT, STATE_PRESENT, STATE_ABSENT);
     })
-    showToast('');
     if (challengeInfo.error) {
-        showToast('유효하지 않은 도전장입니다. 무작위 단어로 시작합니다.', 2000);
+        showToast('도전장 링크가 유효하지 않아 무작위 단어로 시작합니다.', { duration: 2000, isError: true });
+    } else if (isPoolExpanded) {
+        showToast('해당 난이도의 단어가 부족하여 범위를 전체로 확장했습니다.', { duration: 2000, isError: true });
+    } else {
+        showToast('');
     }
     UI.wordGrid.focus();
     UI.newGameBtn.disabled = false;
@@ -334,18 +348,52 @@ async function handleGameEnd(isWin) {
     isGameEnd = true;
 
     if (isWin) {
-        UI.resultTitle.textContent = '🎉 축하합니다!';
+        let titleText = '';
+        switch (guesses.length) {
+            case 1: titleText = '🍀 운수 좋은 날?'; break;
+            case 2: titleText = '🎯 완벽해요!'; break;
+            case 3: titleText = '👏 대단해요!'; break;
+            case 4: titleText = '👍 훌륭합니다!'; break;
+            case 5: titleText = '🙂 잘하셨어요!'; break;
+            case 6: titleText = '😅 아슬아슬했네요!'; break;
+            default: titleText = '🎉 축하합니다!';
+        }
+        UI.resultTitle.textContent = titleText;
         UI.resultMsg.textContent = `${guesses.length}번 만에 정답을 맞혔습니다!`;
+        if (typeof confetti === 'function') {
+            setTimeout(() => {
+                const rootStyles = getComputedStyle(document.documentElement);
+                const css = (name) => rootStyles.getPropertyValue(name).trim();
+                const cssNumber = (name, fallback) => {
+                    const v = parseInt(css(name), 10);
+                    return Number.isNaN(v) ? fallback : v;
+                };
+                confetti({
+                    particleCount: 150,
+                    spread: 90,
+                    origin: { y: 0.6 },
+                    zIndex: cssNumber('--z-index-dialog', 1000),
+                    colors: [
+                        css('--color-correct'),
+                        css('--color-present'),
+                        css('--color-special'),
+                        css('--color-white')
+                    ].filter(Boolean)
+                });
+            }, 300);
+        }
+        setTimeout(() => {
+            DialogManager.open(UI.resultDialog);
+        }, 2000);
     } else {
-        UI.resultTitle.textContent = '💥 아쉽네요!';
-        UI.resultMsg.textContent = '다음 기회에 다시 도전해 보세요.';
+        UI.resultTitle.textContent = '😭 아쉬워요!';
+        UI.resultMsg.textContent = '너무 어려웠죠? 다른 단어로 다시 도전해 보세요.';
+        setTimeout(() => {
+            DialogManager.open(UI.resultDialog);
+        }, 1000);
     }
     UI.resultWord.textContent = secretWord;
     UI.resultDefinition.innerHTML = `<a href="https://en.wiktionary.org/wiki/${secretWord.toLowerCase()}" target="_blank" rel="noopener noreferrer" title="자세히 보기">${secretWordDefinition} <i class="fa-solid fa-arrow-up-right-from-square"></i></a>`;
-
-    setTimeout(() => {
-        DialogManager.open(UI.resultDialog);
-    }, 1000);
 
     UI.newGameBtn.textContent = '결과 보기';
     UI.newGameBtn.onclick = () => {
@@ -364,12 +412,12 @@ function handleKeyDown(event) {
         event.preventDefault();
         showToast('');
         if (currentGuess.length !== WORD_LENGTH) {
-            showToast(`단어는 ${WORD_LENGTH}글자여야 합니다.`, 1500);
+            showToast(`단어는 ${WORD_LENGTH}글자여야 합니다.`, { duration: 1500 });
             shakeRow();
             return;
         }
         if (validWordsSet.size > 0 && !validWordsSet.has(currentGuess)) {
-            showToast('단어 목록에 없는 단어입니다.', 1500);
+            showToast('단어 목록에 없는 단어입니다.', { duration: 1500 });
             shakeRow();
             return;
         }
